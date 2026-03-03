@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Network: required for API calls -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Storage: for file picker (PDF/DOCX upload) on Android 12 and below; Android 13+ uses SAF -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <application
         android:label="Tensai"
         android:name="${applicationName}"
