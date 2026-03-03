@@ -19,6 +19,7 @@ class StudyState(TypedDict):
     complete: bool
     retries: int
     top_k: int
+    namespace: str
 
 
 NO_ANSWER_MSG = "The uploaded study materials don't contain information related to your question."
@@ -27,7 +28,8 @@ NO_ANSWER_MSG = "The uploaded study materials don't contain information related 
 async def retrieve_node(state: StudyState) -> dict:
     """Fetch documents from Pinecone for the current question."""
     top_k = state["top_k"]
-    docs = await retrieval.retrieve_docs(state["question"], top_k)
+    namespace = state.get("namespace") or "default"
+    docs = await retrieval.retrieve_docs(state["question"], top_k, namespace=namespace)
     filtered = [d for d in docs if (d.get("score") or 0) >= 0.5]
     n = len(filtered)
     print(f"[tensai:retrieve] top_k={top_k} → {len(docs)} docs, {n} with score >= 0.5")

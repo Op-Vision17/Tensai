@@ -117,8 +117,8 @@ async def embed_query(text: str) -> list[float]:
     return list(response.data[0].embedding)
 
 
-async def retrieve_docs(query: str, top_k: int) -> list[dict]:
-    """Retrieve the top_k most similar documents for the query from Pinecone."""
+async def retrieve_docs(query: str, top_k: int, namespace: str = "default") -> list[dict]:
+    """Retrieve the top_k most similar documents for the query from Pinecone (optionally in a namespace)."""
     try:
         embedding = await embed_query(query)
         index = get_index()
@@ -127,6 +127,7 @@ async def retrieve_docs(query: str, top_k: int) -> list[dict]:
             vector=embedding,
             top_k=top_k,
             include_metadata=True,
+            namespace=namespace,
         )
         if not results.matches:
             return []
@@ -143,8 +144,8 @@ async def retrieve_docs(query: str, top_k: int) -> list[dict]:
         raise RuntimeError(f"[tensai] Retrieval failed: {e}") from e
 
 
-async def upsert_documents(documents: list[dict]) -> None:
-    """Embed and upsert documents into the Pinecone index in batches of 100.
+async def upsert_documents(documents: list[dict], namespace: str = "default") -> None:
+    """Embed and upsert documents into the Pinecone index in batches of 100 (optionally in a namespace).
 
     Each document must have "id" (str), "text" (str), and optionally "metadata" (dict).
     The "text" is embedded and stored in vector metadata for retrieval.
@@ -153,7 +154,7 @@ async def upsert_documents(documents: list[dict]) -> None:
         await upsert_documents([
             {"id": "chunk-1", "text": "Newton's first law...", "metadata": {"source": "physics.pdf", "page": 1}},
             {"id": "chunk-2", "text": "Force equals mass times acceleration.", "metadata": {"source": "physics.pdf"}},
-        ])
+        ], namespace="user_abc-123")
     """
     if not documents:
         return
@@ -182,6 +183,6 @@ async def upsert_documents(documents: list[dict]) -> None:
     batch_size = 100
     for n in range(0, len(vectors), batch_size):
         batch = vectors[n : n + batch_size]
-        await asyncio.to_thread(index.upsert, vectors=batch)
+        await asyncio.to_thread(index.upsert, vectors=batch, namespace=namespace)
         count = len(batch)
         print(f"[tensai] Upserted batch {n // batch_size + 1}: {count} vectors")

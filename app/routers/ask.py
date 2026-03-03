@@ -47,6 +47,7 @@ async def ask(
 ) -> AskResponse:
     """Run the Tensai graph and return the formatted answer. If authenticated, save to history."""
     settings = get_settings()
+    namespace = f"user_{user.id}" if user is not None else "default"
     initial_state: StudyState = {
         "question": request.question,
         "docs": [],
@@ -57,6 +58,7 @@ async def ask(
         "complete": False,
         "retries": 0,
         "top_k": settings.default_top_k,
+        "namespace": namespace,
     }
     try:
         result = await tensai_graph.ainvoke(initial_state)

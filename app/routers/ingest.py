@@ -2,11 +2,13 @@
 
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
 from app import retrieval
+from app.auth_utils import get_optional_user
 from app.document_loader import extract_text_from_file
+from app.models import User
 
 router = APIRouter(tags=["ingest"])
 
@@ -49,19 +51,27 @@ class IngestTextRequest(BaseModel):
     )
 
 
+def _namespace(user: User | None) -> str:
+    return f"user_{user.id}" if user is not None else "default"
+
+
 @router.post(
     "/ingest",
     response_model=IngestResponse,
     summary="Ingest documents into the index",
 )
-async def ingest(request: IngestRequest) -> IngestResponse:
+async def ingest(
+    request: IngestRequest,
+    user: User | None = Depends(get_optional_user),
+) -> IngestResponse:
     """Embed and store documents in Pinecone. Use these for /ask retrieval."""
+    namespace = _namespace(user)
     try:
         docs = [
             {"id": d.id, "text": d.text, "metadata": d.metadata}
             for d in request.documents
         ]
-        await retrieval.upsert_documents(docs)
+        await retrieval.upsert_documents(docs, namespace=namespace)
         return IngestResponse(ingested=len(docs))
     except Exception as e:
         raise HTTPException(
@@ -75,8 +85,12 @@ async def ingest(request: IngestRequest) -> IngestResponse:
     response_model=IngestResponse,
     summary="Ingest plain text (split by paragraphs)",
 )
-async def ingest_text(request: IngestTextRequest) -> IngestResponse:
+async def ingest_text(
+    request: IngestTextRequest,
+    user: User | None = Depends(get_optional_user),
+) -> IngestResponse:
     """Ingest simple text: split by paragraphs and embed each chunk. No IDs or metadata needed."""
+    namespace = _namespace(user)
     chunks = [s.strip() for s in request.text.split("\n\n") if s.strip()]
     if not chunks:
         raise HTTPException(
@@ -88,7 +102,7 @@ async def ingest_text(request: IngestTextRequest) -> IngestResponse:
         for i, chunk in enumerate(chunks)
     ]
     try:
-        await retrieval.upsert_documents(docs)
+        await retrieval.upsert_documents(docs, namespace=namespace)
         return IngestResponse(ingested=len(docs))
     except Exception as e:
         raise HTTPException(
@@ -103,9 +117,11 @@ async def ingest_text(request: IngestTextRequest) -> IngestResponse:
     summary="Upload a document (PDF, DOCX, TXT) as source",
 )
 async def ingest_upload(
-    file: UploadFile = File(..., description="Document to ingest (.txt, .pdf, .docx)")
+    file: UploadFile = File(..., description="Document to ingest (.txt, .pdf, .docx)"),
+    user: User | None = Depends(get_optional_user),
 ) -> IngestResponse:
     """Upload a file; text is extracted, chunked by paragraphs, and stored as sources for /ask."""
+    namespace = _namespace(user)
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in ALLOWED_EXTENSIONS:
         raise HTTPException(
@@ -136,7 +152,7 @@ async def ingest_upload(
         for i, chunk in enumerate(chunks)
     ]
     try:
-        await retrieval.upsert_documents(docs)
+        await retrieval.upsert_documents(docs, namespace=namespace)
         return IngestResponse(ingested=len(docs))
     except Exception as e:
         raise HTTPException(
