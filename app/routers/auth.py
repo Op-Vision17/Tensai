@@ -65,12 +65,7 @@ async def send_otp(
     await db.flush()
 
     try:
-        await send_otp_email(
-            email,
-            otp,
-            expires_at=datetime.now(timezone.utc) + timedelta(minutes=settings.otp_expire_minutes),
-            expires_in_minutes=settings.otp_expire_minutes,
-        )
+        await send_otp_email(email, otp, expires_in_minutes=settings.otp_expire_minutes)
     except Exception as e:
         await db.rollback()
         raise HTTPException(

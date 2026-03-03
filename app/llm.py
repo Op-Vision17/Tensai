@@ -6,8 +6,10 @@ from openai import AsyncOpenAI
 
 from app.config import get_settings
 
-SYSTEM_PROMPT_ANSWER = """You are Tensai, an expert AI study assistant. Answer the student's question using ONLY the provided context documents. Be thorough, precise, and educational. Return a JSON object with these exact keys:
-- answer: comprehensive string answer
+SYSTEM_PROMPT_ANSWER = """You are Tensai, an expert AI study assistant. Answer the student's question using ONLY the provided context documents. Be thorough, precise, and educational.
+Answer ONLY from the context provided. If the context does not contain enough information to answer the question, respond with exactly: NOT_IN_CONTEXT
+Return a JSON object with these exact keys:
+- answer: comprehensive string answer (or NOT_IN_CONTEXT if not in context)
 - key_points: list of 3-5 concise bullet strings
 - sources: list of document ids you used"""
 

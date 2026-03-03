@@ -21,19 +21,40 @@ class StudyState(TypedDict):
     top_k: int
 
 
+NO_ANSWER_MSG = "The uploaded study materials don't contain information related to your question."
+
+
 async def retrieve_node(state: StudyState) -> dict:
     """Fetch documents from Pinecone for the current question."""
     top_k = state["top_k"]
     docs = await retrieval.retrieve_docs(state["question"], top_k)
-    n = len(docs)
-    print(f"[tensai:retrieve] top_k={top_k} → {n} docs returned")
-    return {"docs": docs}
+    filtered = [d for d in docs if (d.get("score") or 0) >= 0.5]
+    n = len(filtered)
+    print(f"[tensai:retrieve] top_k={top_k} → {len(docs)} docs, {n} with score >= 0.5")
+    if n == 0:
+        return {
+            "docs": [],
+            "answer": NO_ANSWER_MSG,
+            "key_points": [],
+            "sources": [],
+            "confidence": 0.0,
+            "complete": True,
+        }
+    return {"docs": filtered}
 
 
 async def generate_node(state: StudyState) -> dict:
     """Generate answer and key points from the LLM using retrieved docs."""
     result = await llm.generate_answer(state["question"], state["docs"])
     answer = result["answer"]
+    if (answer or "").strip().upper() == "NOT_IN_CONTEXT":
+        return {
+            "answer": NO_ANSWER_MSG,
+            "key_points": [],
+            "sources": [],
+            "confidence": 0.0,
+            "complete": True,
+        }
     print(f"[tensai:generate] answer={len(answer)} chars")
     return {
         "answer": answer,
@@ -69,6 +90,13 @@ async def expand_node(state: StudyState) -> dict:
     }
 
 
+def after_retrieve(state: StudyState) -> str:
+    """If already complete (no docs above threshold), skip to end; else generate."""
+    if state.get("complete"):
+        return "end"
+    return "generate"
+
+
 def should_retry(state: StudyState) -> str:
     """Route to end or expand based on completeness and retry count."""
     if state["complete"]:
@@ -86,7 +114,11 @@ def build_graph() -> CompiledStateGraph:
     graph.add_node("evaluate_node", evaluate_node)
     graph.add_node("expand_node", expand_node)
     graph.add_edge(START, "retrieve_node")
-    graph.add_edge("retrieve_node", "generate_node")
+    graph.add_conditional_edges(
+        "retrieve_node",
+        after_retrieve,
+        {"end": END, "generate": "generate_node"},
+    )
     graph.add_edge("generate_node", "evaluate_node")
     graph.add_conditional_edges(
         "evaluate_node",
