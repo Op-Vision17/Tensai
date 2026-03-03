@@ -4,14 +4,59 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pinput/pinput.dart';
 
 import '../core/app_colors.dart';
-import '../core/input_styles.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_snackbar.dart';
 import '../widgets/gradient_button.dart';
 import '../widgets/logo_widget.dart';
+
+final _defaultPinTheme = PinTheme(
+  width: 48,
+  height: 56,
+  textStyle: GoogleFonts.spaceGrotesk(
+    fontSize: 22,
+    fontWeight: FontWeight.bold,
+    color: Colors.white,
+  ),
+  decoration: BoxDecoration(
+    color: const Color(0xff0a0f1e),
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: const Color(0xff1e2d4a), width: 1.5),
+  ),
+);
+
+final _focusedPinTheme = _defaultPinTheme.copyDecorationWith(
+  border: Border.all(color: const Color(0xff818cf8), width: 2),
+  boxShadow: [
+    BoxShadow(
+      color: const Color(0xff818cf8).withOpacity(0.3),
+      blurRadius: 8,
+      spreadRadius: 1,
+    ),
+  ],
+);
+
+final _submittedPinTheme = _defaultPinTheme.copyWith(
+  decoration: BoxDecoration(
+    color: const Color(0xff0d1526),
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(color: const Color(0xff4ade80), width: 1.5),
+  ),
+);
+
+final _errorPinTheme = _defaultPinTheme.copyDecorationWith(
+  border: Border.all(color: const Color(0xfff87171), width: 1.5),
+  boxShadow: [
+    BoxShadow(
+      color: const Color(0xfff87171).withOpacity(0.3),
+      blurRadius: 8,
+      spreadRadius: 1,
+    ),
+  ],
+);
 
 class VerifyOtpScreen extends ConsumerStatefulWidget {
   const VerifyOtpScreen({super.key, this.email});
@@ -23,7 +68,8 @@ class VerifyOtpScreen extends ConsumerStatefulWidget {
 }
 
 class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
-  final _codeController = TextEditingController();
+  final _otpController = TextEditingController();
+  final _focusNode = FocusNode();
   int _resendCountdown = 0;
   Timer? _timer;
 
@@ -35,7 +81,8 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
 
   @override
   void dispose() {
-    _codeController.dispose();
+    _otpController.dispose();
+    _focusNode.dispose();
     _timer?.cancel();
     super.dispose();
   }
@@ -53,13 +100,17 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
     });
   }
 
+  void _handleVerify() {
+    _verify();
+  }
+
   Future<void> _verify() async {
     final email = widget.email?.trim();
     if (email == null || email.isEmpty) {
       if (mounted) AppSnackbar.showError(context, 'Email missing. Go back and enter email.');
       return;
     }
-    final code = _codeController.text.trim();
+    final code = _otpController.text.trim();
     if (code.length != 6) {
       if (mounted) AppSnackbar.showError(context, 'Enter the 6-digit code');
       return;
@@ -133,21 +184,25 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Center(
-                      child: SizedBox(
-                        width: 220,
-                        child: TextField(
-                          controller: _codeController,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Center(
+                        child: Pinput(
+                          length: 6,
+                          controller: _otpController,
+                          focusNode: _focusNode,
+                          autofocus: true,
+                          obscureText: false,
                           keyboardType: TextInputType.number,
-                          maxLength: 6,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 28,
-                            letterSpacing: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                          decoration: InputStyles.otp(),
+                          onCompleted: (pin) => _handleVerify(),
+                          validator: (pin) => pin != null && pin.length < 6 ? '' : null,
+                          pinputAutovalidateMode: PinputAutovalidateMode.onSubmit,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          defaultPinTheme: _defaultPinTheme,
+                          focusedPinTheme: _focusedPinTheme,
+                          submittedPinTheme: _submittedPinTheme,
+                          errorPinTheme: _errorPinTheme,
+                          separatorBuilder: (_) => const SizedBox(width: 10),
                         ),
                       ),
                     ),

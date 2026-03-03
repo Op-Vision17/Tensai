@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+import '../core/app_colors.dart';
 import '../providers/history_provider.dart';
 import '../widgets/history_card.dart';
 
@@ -47,6 +49,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
     return RefreshIndicator(
       onRefresh: _refresh,
+      color: AppColors.primary,
       child: historyAsync.when(
         data: (items) {
           if (items.isEmpty) {
@@ -54,13 +57,18 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               child: SizedBox(
                 height: MediaQuery.of(context).size.height * 0.5,
-                child: const Center(child: Text('No history yet.')),
+                child: Center(
+                  child: Text(
+                    'No history yet.',
+                    style: GoogleFonts.spaceGrotesk(color: AppColors.subtitle, fontSize: 16),
+                  ),
+                ),
               ),
             );
           }
           return ListView.builder(
             controller: _scrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.only(top: 8, bottom: 24),
             itemCount: items.length,
             itemBuilder: (context, index) {
               final item = items[index];
@@ -71,8 +79,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+        error: (e, _) => Center(
+          child: Text(
+            'Error: $e',
+            style: GoogleFonts.spaceGrotesk(color: AppColors.errorBorder),
+          ),
+        ),
       ),
     );
   }

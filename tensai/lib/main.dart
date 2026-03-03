@@ -33,15 +33,17 @@ class TensaiApp extends ConsumerWidget {
       data: (_) => MaterialApp.router(
         title: 'Tensai',
         theme: AppTheme.light,
-        debugShowCheckedModeBanner: false,
         darkTheme: AppTheme.dark,
+        themeMode: ThemeMode.dark,
+        debugShowCheckedModeBanner: false,
         routerConfig: router,
       ),
       error: (_, __) => MaterialApp.router(
         title: 'Tensai',
         theme: AppTheme.light,
-        debugShowCheckedModeBanner: false,
         darkTheme: AppTheme.dark,
+        themeMode: ThemeMode.dark,
+        debugShowCheckedModeBanner: false,
         routerConfig: router,
       ),
     );
