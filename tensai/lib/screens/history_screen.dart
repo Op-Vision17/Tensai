@@ -6,49 +6,19 @@ import '../core/app_colors.dart';
 import '../providers/history_provider.dart';
 import '../widgets/history_card.dart';
 
-class HistoryScreen extends ConsumerStatefulWidget {
+class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 
   @override
-  ConsumerState<HistoryScreen> createState() => _HistoryScreenState();
-}
-
-class _HistoryScreenState extends ConsumerState<HistoryScreen> {
-  final _scrollController = ScrollController();
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    final pos = _scrollController.position;
-    if (pos.pixels >= pos.maxScrollExtent - 200) {
-      ref.read(historyNotifierProvider.notifier).fetch(refresh: false);
-    }
-  }
-
-  Future<void> _refresh() async {
-    await ref.read(historyNotifierProvider.notifier).fetch(refresh: true);
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final historyAsync = ref.watch(historyNotifierProvider);
 
     return RefreshIndicator(
-      onRefresh: _refresh,
+      onRefresh: () => ref.read(historyNotifierProvider.notifier).fetch(refresh: true),
       color: AppColors.primary,
       child: historyAsync.when(
-        data: (items) {
+        data: (historyState) {
+          final items = historyState.items;
           if (items.isEmpty) {
             return SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -64,10 +34,25 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             );
           }
           return ListView.builder(
-            controller: _scrollController,
             padding: const EdgeInsets.only(top: 8, bottom: 24),
-            itemCount: items.length,
+            itemCount: items.length + (historyState.hasMore ? 1 : 0),
             itemBuilder: (context, index) {
+              if (index == items.length) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Center(
+                    child: TextButton.icon(
+                      onPressed: () =>
+                          ref.read(historyNotifierProvider.notifier).fetch(refresh: false),
+                      icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
+                      label: Text(
+                        'Load more',
+                        style: GoogleFonts.spaceGrotesk(color: AppColors.primary, fontSize: 16),
+                      ),
+                    ),
+                  ),
+                );
+              }
               final item = items[index];
               return HistoryCard(
                 item: item,

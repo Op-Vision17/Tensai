@@ -11,17 +11,24 @@ final historyServiceProvider = Provider<HistoryService>((ref) {
   return HistoryService(ref.watch(apiServiceProvider).dio);
 });
 
+/// State for history list with pagination.
+class HistoryState {
+  const HistoryState({required this.items, required this.hasMore});
+  final List<HistoryItem> items;
+  final bool hasMore;
+}
+
 @Riverpod(keepAlive: true)
 class HistoryNotifier extends _$HistoryNotifier {
   int _offset = 0;
   bool _isLoading = false;
   bool _hasMore = true;
-  static const int _pageSize = 50;
+  static const int _pageSize = 5;
 
   @override
-  Future<List<HistoryItem>> build() async {
+  Future<HistoryState> build() async {
     await fetch(refresh: true);
-    return state.value ?? [];
+    return state.value ?? const HistoryState(items: [], hasMore: false);
   }
 
   Future<void> fetch({bool refresh = false}) async {
@@ -33,7 +40,7 @@ class HistoryNotifier extends _$HistoryNotifier {
       _hasMore = true;
     }
     _isLoading = true;
-    final isInitialOrRefresh = refresh || (state.value?.isEmpty ?? true);
+    final isInitialOrRefresh = refresh || (state.value?.items.isEmpty ?? true);
     if (isInitialOrRefresh) {
       state = const AsyncValue.loading();
     }
@@ -46,9 +53,8 @@ class HistoryNotifier extends _$HistoryNotifier {
       );
       _offset += items.length;
       if (items.length < _pageSize) _hasMore = false;
-      state = AsyncValue.data(
-        refresh ? items : [...state.value ?? [], ...items],
-      );
+      final nextList = refresh ? items : [...state.value!.items, ...items];
+      state = AsyncValue.data(HistoryState(items: nextList, hasMore: _hasMore));
     } finally {
       _isLoading = false;
     }
@@ -57,8 +63,7 @@ class HistoryNotifier extends _$HistoryNotifier {
   Future<void> delete(String id) async {
     final service = ref.read(historyServiceProvider);
     await service.deleteHistory(id);
-    state = AsyncValue.data(
-      (state.value ?? []).where((e) => e.id != id).toList(),
-    );
+    final next = (state.value!.items).where((e) => e.id != id).toList();
+    state = AsyncValue.data(HistoryState(items: next, hasMore: state.value!.hasMore));
   }
 }

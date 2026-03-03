@@ -81,18 +81,22 @@ class _SourcesScreenState extends ConsumerState<SourcesScreen> {
     );
     try {
       await ref.read(sourcesNotifierProvider.notifier).delete(source.id);
-      if (mounted) {
-        Navigator.of(context).pop();
+      if (!mounted) return;
+      final rootNav = Navigator.of(context, rootNavigator: true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        rootNav.pop();
         AppSnackbar.showSuccess(context, 'Source deleted');
-      }
+      });
     } catch (e) {
-      if (mounted) {
-        Navigator.of(context).pop();
-        AppSnackbar.showError(
-          context,
-          e is DioException ? ApiService.handleError(e) : e.toString(),
-        );
-      }
+      if (!mounted) return;
+      final rootNav = Navigator.of(context, rootNavigator: true);
+      final message = e is DioException ? ApiService.handleError(e) : e.toString();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        rootNav.pop();
+        AppSnackbar.showError(context, message);
+      });
     }
   }
 
