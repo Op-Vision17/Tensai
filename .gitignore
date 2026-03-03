@@ -9,13 +9,11 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
 develop-eggs/
 dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -24,6 +22,9 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Build (Python + Flutter)
+build/
 
 # Virtual environments
 .venv/
@@ -53,6 +54,9 @@ htmlcov/
 *.db
 *.sqlite3
 
+# Node (if you add any JS tooling later)
+node_modules/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -63,3 +67,46 @@ logs/
 
 # Generated docs
 docs/
+
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+**/.metadata
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+*.ipr
+*.iws
+
+# Flutter Android
+**/android/.gradle/
+**/android/local.properties
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+
+# Flutter iOS
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/Generated.xcconfig
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+
+# Flutter Web
+**/web/.dart_tool/
+
+# Flutter Windows/macOS/Linux (generated)
+**/windows/flutter/generated_plugin_registrant.cc
+**/windows/flutter/generated_plugin_registrant.h
+**/windows/flutter/generated_plugins.cmake
+**/windows/flutter/generated_registrant.cc
+**/windows/flutter/generated_registrant.h
+**/windows/flutter/generated_plugin_registrant.dart
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/linux/flutter/generated_plugin_registrant.cc
+**/linux/flutter/generated_plugin_registrant.h
+**/linux/flutter/generated_plugins.cmake
+**/linux/flutter/generated_plugin_registrant.dart
