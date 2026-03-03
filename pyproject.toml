@@ -1,0 +1,45 @@
+[tool.poetry]
+name = "tensai"
+version = "0.1.0"
+description = "Tensai — Production-grade AI Study Copilot"
+authors = ["your-name <you@email.com>"]
+package-mode = true
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.111.0"
+uvicorn = {extras = ["standard"], version = "^0.29.0"}
+python-dotenv = "^1.0.1"
+pydantic-settings = "^2.2.1"
+openai = "^1.30.1"
+pinecone-client = "^3.2.2"
+langgraph = "^0.1.1"
+langchain-core = "^0.2.5"
+httpx = "^0.27.0"
+pypdf = "^5.0.0"
+python-docx = "^1.1.0"
+sqlalchemy = "^2.0.30"
+alembic = "^1.13.1"
+aiosqlite = "^0.20.0"
+asyncpg = {version = "^0.29.0", extras = ["binary"]}
+psycopg2-binary = "^2.9.9"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+python-multipart = "^0.0.9"
+aiosmtplib = "^3.0.1"
+email-validator = "^2.1.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.0"
+pytest-asyncio = "^0.23.0"
+ruff = "^0.4.0"
+
+[tool.poetry.scripts]
+start = "app.main:start"
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
