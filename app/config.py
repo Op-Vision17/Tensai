@@ -68,7 +68,7 @@ class Settings(BaseSettings):
     email_timezone: str = "Asia/Kolkata"
 
     # Tensai graph tuning
-    default_top_k: int = 5  # Default number of retrieved chunks per query in the RAG pipeline.
+    default_top_k: int = 10  # Default number of retrieved chunks per query in the RAG pipeline.
     max_top_k: int = 15  # Upper bound for top_k to avoid overload and control cost.
     confidence_threshold: float = 0.7  # Minimum score to treat a retrieval or decision as confident.
     max_retries: int = 2  # Retries for transient failures (e.g. LLM or Pinecone calls).

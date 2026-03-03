@@ -35,9 +35,11 @@ async def retrieve_node(state: StudyState) -> dict:
     top_k = state["top_k"]
     namespace = state.get("namespace") or "default"
     docs = await retrieval.retrieve_docs(state["question"], top_k, namespace=namespace)
-    filtered = [d for d in docs if (d.get("score") or 0) >= 0.5]
+    # Use a lower threshold (0.3) so queries like "who is X" still get resume/paste chunks
+    min_score = 0.3
+    filtered = [d for d in docs if (d.get("score") or 0) >= min_score]
     n = len(filtered)
-    print(f"[tensai:retrieve] top_k={top_k} → {len(docs)} docs, {n} with score >= 0.5")
+    print(f"[tensai:retrieve] top_k={top_k} → {len(docs)} docs, {n} with score >= {min_score}")
     if n == 0:
         return {
             "docs": [],
