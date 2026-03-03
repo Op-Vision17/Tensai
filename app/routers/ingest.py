@@ -1,14 +1,19 @@
 """Tensai — Ingest router: documents and text into the vector index."""
 
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import retrieval
 from app.auth_utils import get_optional_user
+from app.database import get_db
 from app.document_loader import extract_text_from_file
-from app.models import User
+from app.models import Source, User
 
 router = APIRouter(tags=["ingest"])
 
@@ -49,6 +54,18 @@ class IngestTextRequest(BaseModel):
         min_length=1,
         description="Plain text to ingest. Split by paragraphs (double newline) into chunks.",
     )
+    title: str | None = Field(default=None, description="Optional display title for this source.")
+
+
+class SourceItem(BaseModel):
+    """One source in the list response."""
+
+    id: uuid.UUID
+    title: str
+    source_type: str
+    filename: str | None
+    chunk_count: int
+    created_at: datetime
 
 
 def _namespace(user: User | None) -> str:
@@ -88,6 +105,7 @@ async def ingest(
 async def ingest_text(
     request: IngestTextRequest,
     user: User | None = Depends(get_optional_user),
+    db: AsyncSession = Depends(get_db),
 ) -> IngestResponse:
     """Ingest simple text: split by paragraphs and embed each chunk. No IDs or metadata needed."""
     namespace = _namespace(user)
@@ -97,18 +115,37 @@ async def ingest_text(
             status_code=400,
             detail="No non-empty paragraphs found in text.",
         )
+    title = request.title
+    if not title:
+        title = f"Pasted Text {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')}"
+    source_id = uuid.uuid4()
     docs = [
         {"id": f"chunk-{i}", "text": chunk, "metadata": {}}
         for i, chunk in enumerate(chunks)
     ]
     try:
-        await retrieval.upsert_documents(docs, namespace=namespace)
-        return IngestResponse(ingested=len(docs))
+        await retrieval.upsert_documents(
+            docs,
+            namespace=namespace,
+            source_id=str(source_id),
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"[tensai] Ingest failed: {e}",
         ) from e
+    source = Source(
+        id=source_id,
+        user_id=user.id if user else None,
+        title=title,
+        namespace=namespace,
+        chunk_count=len(docs),
+        source_type="text",
+        filename=None,
+    )
+    db.add(source)
+    await db.flush()
+    return IngestResponse(ingested=len(docs))
 
 
 @router.post(
@@ -118,7 +155,9 @@ async def ingest_text(
 )
 async def ingest_upload(
     file: UploadFile = File(..., description="Document to ingest (.txt, .pdf, .docx)"),
+    title: str | None = Form(None, description="Optional display title for this source."),
     user: User | None = Depends(get_optional_user),
+    db: AsyncSession = Depends(get_db),
 ) -> IngestResponse:
     """Upload a file; text is extracted, chunked by paragraphs, and stored as sources for /ask."""
     namespace = _namespace(user)
@@ -147,15 +186,88 @@ async def ingest_upload(
             detail="No text content found in the document.",
         )
     source_name = file.filename or "upload"
+    display_title = (title or "").strip() or source_name
+    source_id = uuid.uuid4()
     docs = [
         {"id": f"{source_name}--{i}", "text": chunk, "metadata": {"source": source_name}}
         for i, chunk in enumerate(chunks)
     ]
     try:
-        await retrieval.upsert_documents(docs, namespace=namespace)
-        return IngestResponse(ingested=len(docs))
+        await retrieval.upsert_documents(
+            docs,
+            namespace=namespace,
+            source_id=str(source_id),
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"[tensai] Ingest failed: {e}",
         ) from e
+    source = Source(
+        id=source_id,
+        user_id=user.id if user else None,
+        title=display_title,
+        namespace=namespace,
+        chunk_count=len(docs),
+        source_type="upload",
+        filename=file.filename,
+    )
+    db.add(source)
+    await db.flush()
+    return IngestResponse(ingested=len(docs))
+
+
+@router.get(
+    "/ingest/sources",
+    response_model=list[SourceItem],
+    summary="List sources for the current user or guest",
+)
+async def list_sources(
+    user: User | None = Depends(get_optional_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[SourceItem]:
+    """If logged in: return user's sources. If guest: return sources where user_id is null. Ordered by created_at DESC."""
+    q = select(Source).order_by(Source.created_at.desc())
+    if user is not None:
+        q = q.where(Source.user_id == user.id)
+    else:
+        q = q.where(Source.user_id.is_(None))
+    result = await db.execute(q)
+    sources = result.scalars().all()
+    return [
+        SourceItem(
+            id=s.id,
+            title=s.title,
+            source_type=s.source_type,
+            filename=s.filename,
+            chunk_count=s.chunk_count,
+            created_at=s.created_at,
+        )
+        for s in sources
+    ]
+
+
+@router.delete(
+    "/ingest/sources/{source_id}",
+    status_code=204,
+    summary="Delete a source and its vectors",
+)
+async def delete_source(
+    source_id: uuid.UUID,
+    user: User | None = Depends(get_optional_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Verify source belongs to current user (or guest), delete vectors from Pinecone, then delete Source record."""
+    result = await db.execute(select(Source).where(Source.id == source_id).limit(1))
+    source = result.scalars().first()
+    if source is None:
+        raise HTTPException(status_code=404, detail="Source not found")
+    if user is not None:
+        if source.user_id != user.id:
+            raise HTTPException(status_code=403, detail="Source does not belong to you")
+    else:
+        if source.user_id is not None:
+            raise HTTPException(status_code=403, detail="Source does not belong to you")
+    await retrieval.delete_vectors_by_source_id(str(source_id), source.namespace)
+    await db.delete(source)
+    await db.flush()

@@ -144,17 +144,22 @@ async def retrieve_docs(query: str, top_k: int, namespace: str = "default") -> l
         raise RuntimeError(f"[tensai] Retrieval failed: {e}") from e
 
 
-async def upsert_documents(documents: list[dict], namespace: str = "default") -> None:
+async def upsert_documents(
+    documents: list[dict],
+    namespace: str = "default",
+    source_id: str | None = None,
+) -> None:
     """Embed and upsert documents into the Pinecone index in batches of 100 (optionally in a namespace).
 
     Each document must have "id" (str), "text" (str), and optionally "metadata" (dict).
     The "text" is embedded and stored in vector metadata for retrieval.
+    If source_id is provided, it is added to each vector's metadata for filtering on delete.
 
     Example:
         await upsert_documents([
             {"id": "chunk-1", "text": "Newton's first law...", "metadata": {"source": "physics.pdf", "page": 1}},
             {"id": "chunk-2", "text": "Force equals mass times acceleration.", "metadata": {"source": "physics.pdf"}},
-        ], namespace="user_abc-123")
+        ], namespace="user_abc-123", source_id="uuid-here")
     """
     if not documents:
         return
@@ -174,6 +179,8 @@ async def upsert_documents(documents: list[dict], namespace: str = "default") ->
     for i, doc in enumerate(documents):
         meta = dict(doc.get("metadata") or {})
         meta["text"] = doc["text"]
+        if source_id is not None:
+            meta["source_id"] = source_id
         vectors.append({
             "id": doc["id"],
             "values": embedding_by_i[i],
@@ -186,3 +193,14 @@ async def upsert_documents(documents: list[dict], namespace: str = "default") ->
         await asyncio.to_thread(index.upsert, vectors=batch, namespace=namespace)
         count = len(batch)
         print(f"[tensai] Upserted batch {n // batch_size + 1}: {count} vectors")
+
+
+async def delete_vectors_by_source_id(source_id: str, namespace: str) -> None:
+    """Delete all vectors in the given namespace whose metadata.source_id matches."""
+    index = get_index()
+    await asyncio.to_thread(
+        index.delete,
+        filter={"source_id": source_id},
+        namespace=namespace,
+    )
+    print(f"[tensai] Deleted vectors for source_id={source_id} in namespace={namespace}")

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../core/app_colors.dart';
 
@@ -47,7 +48,7 @@ class GradientButton extends StatelessWidget {
                     )
                   : Text(
                       label,
-                      style: const TextStyle(
+                      style: GoogleFonts.spaceGrotesk(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
                         fontSize: 16,

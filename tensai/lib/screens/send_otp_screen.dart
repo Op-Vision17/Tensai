@@ -58,6 +58,7 @@ class _SendOtpScreenState extends ConsumerState<SendOtpScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBarLogo(size: 32),
         title: Text('Sign in', style: GoogleFonts.spaceGrotesk(color: AppColors.subtitle)),
         backgroundColor: Colors.transparent,
         foregroundColor: AppColors.subtitle,

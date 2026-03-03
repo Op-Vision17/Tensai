@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme.dart';
 import 'providers/auth_provider.dart';
 import 'router.dart';
+import 'screens/splash_screen.dart';
 
 void main() {
   runApp(const ProviderScope(child: TensaiApp()));
@@ -15,37 +16,28 @@ class TensaiApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authAsync = ref.watch(authNotifierProvider);
+    final splashMinElapsed = ref.watch(splashMinTimeElapsedProvider);
     final router = ref.watch(goRouterProvider);
 
-    return authAsync.when(
-      loading: () => MaterialApp(
+    final showSplash = authAsync.isLoading || !splashMinElapsed;
+
+    if (showSplash) {
+      return MaterialApp(
         title: 'Tensai',
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
-        home: const Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366f1)),
-            ),
-          ),
-        ),
-      ),
-      data: (_) => MaterialApp.router(
-        title: 'Tensai',
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        themeMode: ThemeMode.dark,
         debugShowCheckedModeBanner: false,
-        routerConfig: router,
-      ),
-      error: (_, __) => MaterialApp.router(
-        title: 'Tensai',
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        themeMode: ThemeMode.dark,
-        debugShowCheckedModeBanner: false,
-        routerConfig: router,
-      ),
+        home: const SplashScreen(),
+      );
+    }
+
+    return MaterialApp.router(
+      title: 'Tensai',
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.dark,
+      debugShowCheckedModeBanner: false,
+      routerConfig: router,
     );
   }
 }

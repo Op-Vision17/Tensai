@@ -19,9 +19,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(historyNotifierProvider.notifier).fetch();
-    });
     _scrollController.addListener(_onScroll);
   }
 

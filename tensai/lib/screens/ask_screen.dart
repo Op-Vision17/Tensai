@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../core/app_colors.dart';
 import '../core/input_styles.dart';
 import '../providers/ask_provider.dart';
 import '../widgets/answer_card.dart';
@@ -58,19 +56,6 @@ class _AskScreenState extends ConsumerState<AskScreen> {
                     decoration: InputStyles.standard(
                       labelText: 'Your question',
                       hintText: 'Ask about your study materials...',
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        '$questionLength / 1000',
-                        style: GoogleFonts.spaceGrotesk(
-                          color: AppColors.subtitle,
-                          fontSize: 12,
-                        ),
-                      ),
                     ),
                   ),
                   const SizedBox(height: 20),

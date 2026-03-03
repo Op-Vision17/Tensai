@@ -54,6 +54,28 @@ class RefreshToken(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
 
+class Source(Base):
+    __tablename__ = "sources"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        SA_Uuid(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        SA_Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    namespace: Mapped[str] = mapped_column(String(255), nullable=False)
+    chunk_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    source_type: Mapped[str] = mapped_column(String(50), nullable=False)  # "text", "upload"
+    filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 class History(Base):
     __tablename__ = "history"
 

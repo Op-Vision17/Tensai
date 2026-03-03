@@ -153,6 +153,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBarLogo(size: 32),
         title: Text('Verify code', style: GoogleFonts.spaceGrotesk(color: AppColors.subtitle)),
         backgroundColor: Colors.transparent,
         foregroundColor: AppColors.subtitle,

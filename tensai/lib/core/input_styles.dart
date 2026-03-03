@@ -22,6 +22,8 @@ class InputStyles {
       borderSide: BorderSide(color: borderColor),
     );
     return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
       filled: true,
       fillColor: fillColor,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

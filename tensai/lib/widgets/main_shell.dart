@@ -37,10 +37,7 @@ class _MainShellState extends ConsumerState<MainShell> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: const Padding(
-          padding: EdgeInsets.all(8),
-          child: LogoWidget(width: 32),
-        ),
+        leading: const AppBarLogo(size: 32),
         title: Text(
           _tabs[currentIndex].path == '/ask' ? 'Tensai' : _tabs[currentIndex].label,
           style: GoogleFonts.spaceGrotesk(color: AppColors.subtitle),
