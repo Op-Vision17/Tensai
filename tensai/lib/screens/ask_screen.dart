@@ -24,6 +24,7 @@ class _AskScreenState extends ConsumerState<AskScreen> {
   }
 
   Future<void> _ask() async {
+    FocusScope.of(context).unfocus();
     final question = _questionController.text.trim();
     if (question.length < 5) return;
     await ref.read(askNotifierProvider.notifier).ask(question);

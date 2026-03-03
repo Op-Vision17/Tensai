@@ -105,6 +105,7 @@ class _VerifyOtpScreenState extends ConsumerState<VerifyOtpScreen> {
   }
 
   Future<void> _verify() async {
+    FocusScope.of(context).unfocus();
     final email = widget.email?.trim();
     if (email == null || email.isEmpty) {
       if (mounted) AppSnackbar.showError(context, 'Email missing. Go back and enter email.');

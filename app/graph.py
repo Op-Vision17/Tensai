@@ -1,12 +1,16 @@
 """Tensai — LangGraph state machine with retry logic."""
 
-from typing import TypedDict
+import uuid
+from typing import NotRequired, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import evaluation, llm, retrieval
 from app.config import get_settings
+from app.models import Source
 
 
 class StudyState(TypedDict):
@@ -20,6 +24,7 @@ class StudyState(TypedDict):
     retries: int
     top_k: int
     namespace: str
+    db: NotRequired[AsyncSession]
 
 
 NO_ANSWER_MSG = "The uploaded study materials don't contain information related to your question."
@@ -58,10 +63,37 @@ async def generate_node(state: StudyState) -> dict:
             "complete": True,
         }
     print(f"[tensai:generate] answer={len(answer)} chars")
+    # Build unique source titles from retrieved docs (so response shows titles, not chunk ids)
+    seen_titles: set[str] = set()
+    source_titles: list[str] = []
+    db: AsyncSession | None = state.get("db")
+    source_id_cache: dict[str, str] = {}
+    for doc in state["docs"]:
+        meta = doc.get("metadata") or {}
+        title = meta.get("source_title") or meta.get("source")
+        if not title and meta.get("source_id") and db is not None:
+            sid = meta["source_id"]
+            if sid in source_id_cache:
+                title = source_id_cache[sid]
+            else:
+                try:
+                    source_uuid = uuid.UUID(sid)
+                    r = await db.execute(select(Source.title).where(Source.id == source_uuid).limit(1))
+                    row = r.scalars().first()
+                    if row is not None:
+                        title = row
+                        source_id_cache[sid] = title
+                except (ValueError, TypeError):
+                    pass
+        if not title:
+            title = doc.get("id") or ""
+        if title and title not in seen_titles:
+            seen_titles.add(title)
+            source_titles.append(title)
     return {
         "answer": answer,
         "key_points": result.get("key_points", []),
-        "sources": result.get("sources", []),
+        "sources": source_titles,
     }
 
 

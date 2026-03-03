@@ -97,6 +97,7 @@ class _SourcesScreenState extends ConsumerState<SourcesScreen> {
   }
 
   Future<void> _ingestText() async {
+    FocusScope.of(context).unfocus();
     final text = _pasteTextController.text.trim();
     if (text.isEmpty) return;
     ref.read(_textLoadingProvider.notifier).state = true;
@@ -133,6 +134,7 @@ class _SourcesScreenState extends ConsumerState<SourcesScreen> {
   }
 
   Future<void> _ingestUpload() async {
+    FocusScope.of(context).unfocus();
     final file = _pickedFile;
     if (file == null) return;
     ref.read(_uploadLoadingProvider.notifier).state = true;

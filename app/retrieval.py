@@ -148,6 +148,7 @@ async def upsert_documents(
     documents: list[dict],
     namespace: str = "default",
     source_id: str | None = None,
+    source_title: str | None = None,
 ) -> None:
     """Embed and upsert documents into the Pinecone index in batches of 100 (optionally in a namespace).
 
@@ -181,6 +182,8 @@ async def upsert_documents(
         meta["text"] = doc["text"]
         if source_id is not None:
             meta["source_id"] = source_id
+        if source_title is not None:
+            meta["source_title"] = source_title
         vectors.append({
             "id": doc["id"],
             "values": embedding_by_i[i],

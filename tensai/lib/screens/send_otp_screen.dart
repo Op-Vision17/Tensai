@@ -34,6 +34,7 @@ class _SendOtpScreenState extends ConsumerState<SendOtpScreen> {
   }
 
   Future<void> _sendOtp() async {
+    FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
     final email = _emailController.text.trim().toLowerCase();
     await ref.read(authNotifierProvider.notifier).sendOtp(email);

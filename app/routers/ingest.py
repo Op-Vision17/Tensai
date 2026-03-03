@@ -128,6 +128,7 @@ async def ingest_text(
             docs,
             namespace=namespace,
             source_id=str(source_id),
+            source_title=title,
         )
     except Exception as e:
         raise HTTPException(
@@ -197,6 +198,7 @@ async def ingest_upload(
             docs,
             namespace=namespace,
             source_id=str(source_id),
+            source_title=display_title,
         )
     except Exception as e:
         raise HTTPException(

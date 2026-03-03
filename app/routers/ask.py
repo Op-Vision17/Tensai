@@ -59,6 +59,7 @@ async def ask(
         "retries": 0,
         "top_k": settings.default_top_k,
         "namespace": namespace,
+        "db": db,
     }
     try:
         result = await tensai_graph.ainvoke(initial_state)
