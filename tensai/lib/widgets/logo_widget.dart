@@ -23,7 +23,7 @@ class AppBarLogo extends StatelessWidget {
   }
 }
 
-/// Full logo (gradient cap icon) for screens.
+/// Full Tensai logo image for screens (e.g. Send OTP, Verify OTP).
 class LogoWidget extends StatelessWidget {
   const LogoWidget({super.key, this.width = 80});
 
@@ -31,10 +31,18 @@ class LogoWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ShaderMask(
-      blendMode: BlendMode.srcIn,
-      shaderCallback: (bounds) => AppColors.brandGradient.createShader(bounds),
-      child: Icon(Icons.school_rounded, size: width, color: Colors.white),
+    return Image.asset(
+      'assets/logo_bg_remove.png',
+      width: width,
+      height: width,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => Image.asset(
+        'assets/app_icon_bgremove.png',
+        width: width,
+        height: width,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => Icon(Icons.school_rounded, size: width, color: AppColors.subtitle),
+      ),
     );
   }
 }

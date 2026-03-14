@@ -1,9 +1,13 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../core/app_colors.dart';
+import '../providers/auth_provider.dart';
 import '../providers/history_provider.dart';
+import '../services/api_service.dart';
 import '../widgets/history_card.dart';
 
 class HistoryScreen extends ConsumerWidget {
@@ -64,12 +68,52 @@ class HistoryScreen extends ConsumerWidget {
         loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
-        error: (e, _) => Center(
-          child: Text(
-            'Error: $e',
-            style: GoogleFonts.spaceGrotesk(color: AppColors.errorBorder),
-          ),
-        ),
+        error: (e, _) {
+          final message = e is DioException
+              ? ApiService.handleError(e)
+              : e.toString();
+          final is401 = e is DioException && e.response?.statusCode == 401;
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.5,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.spaceGrotesk(
+                          color: AppColors.errorBorder,
+                          fontSize: 16,
+                        ),
+                      ),
+                      if (is401) ...[
+                        const SizedBox(height: 20),
+                        FilledButton.icon(
+                          onPressed: () async {
+                            await ref.read(authNotifierProvider.notifier).logout();
+                            if (context.mounted) {
+                              context.go('/send-otp');
+                            }
+                          },
+                          icon: const Icon(Icons.login),
+                          label: const Text('Sign in again'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

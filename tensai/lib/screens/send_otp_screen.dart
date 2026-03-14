@@ -65,32 +65,20 @@ class _SendOtpScreenState extends ConsumerState<SendOtpScreen> {
         foregroundColor: AppColors.subtitle,
       ),
       body: SafeArea(
-        child: Center(
+        child: Align(
+          alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 24),
               child: Form(
                 key: _formKey,
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const LogoWidget(width: 90),
+                    const LogoWidget(width: 270),
                     const SizedBox(height: 16),
-                    ShaderMask(
-                      blendMode: BlendMode.srcIn,
-                      shaderCallback: (bounds) =>
-                          AppColors.brandGradient.createShader(bounds),
-                      child: Text(
-                        'TENSAI',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
                     Text(
                       'AI Study Copilot',
                       style: GoogleFonts.spaceGrotesk(
